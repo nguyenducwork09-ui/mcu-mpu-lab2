@@ -1,0 +1,371 @@
+=== PAGE 1 ===
+Dr. Le Trong Nhan
+
+=== PAGE 2 ===
+
+
+=== PAGE 3 ===
+
+
+=== PAGE 4 ===
+
+
+=== PAGE 5 ===
+Contents
+Chapter 1. Timer Interrupt and LED Scanning 7
+1 Introduction . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 8
+2 Timer Interrupt Setup . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 9
+3 Exercise and Report . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 12
+3.1 Exercise 1 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 12
+3.2 Exercise 2 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 13
+3.3 Exercise 3 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 13
+3.4 Exercise 4 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 14
+3.5 Exercise 5 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 14
+3.6 Exercise 6 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 15
+3.7 Exercise 7 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 16
+3.8 Exercise 8 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 17
+3.9 Exercise 9 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 17
+3.10 Exercise 10 . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . 18
+Microcontroller Page 5
+
+=== PAGE 6 ===
+Page 6 HCMUT - Computer Engineering
+
+=== PAGE 7 ===
+CHAPTER 1
+Timer Interrupt and LED Scanning
+
+=== PAGE 8 ===
+1 Introduction
+Timers are one of the most important features in modern micro-controllers. They allow
+us to measure how long something takes to execute, create non-blocking code, precisely
+control pin timing, and even run operating systems. In this manual, how to conﬁgure a
+timer using STM32CubeIDE is presented how to use them to ﬂash an LED. Finally, stu-
+dents are proposed to ﬁnalize 10 exercises using timer interrupt for applications based
+LED Scanning.
+Figure 1.1: Four seven segment LED interface for a micro-controller
+Design an interface for with multiple LED (seven segment or matrix) displays which is to
+be controlled is depends on the number of input and output pins needed for controlling
+all the LEDs in the given matrix display, the amount of current that each pin can source
+and sink and the speed at which the micro-controller can send out control signals. With
+all these speciﬁcations, interfacing can be done for 4 seven segment LEDs with a micro-
+controller is proposed in the ﬁgure above.
+In the above diagram each seven segment display is having 8 internal LEDs, leading to
+the total number of LEDs is 32. However, not all the LEDs are required to turn ON, but
+one of them is needed. Therefore, only 12 lines are needed to control the whole 4 seven
+segment LEDs. By controlling with the micro-controller, we can turn ON an LED during
+a same interval TS. Therfore, the period for controlling all 4 seven segment LEDs is 4 TS.
+In other words, these LEDs are scanned at frequecy f = 1/4TS. Finally, it is obviously that
+if the frequency is greater than 30Hz (e.g. f = 50Hz), it seems that all LEDs are turn ON at
+the same time.
+In this manual, the timer interrupt is used to design the interval TS for LED scanning.
+Unfortunately, the simulation on Proteus can not execute at high frequency, the frequency
+f is set to a low value (e.g. 1Hz). In a real implementation, this frequency should be 50Hz.
+Page 8 HCMUT - Computer Engineering
+
+=== PAGE 9 ===
+2 Timer Interrupt Setup
+Step 1: Create a simple project, which LED connected to PA5. The manual can be found
+in the ﬁrst lab.
+Step 2: Check the clock source of the system on the tab Clock Conﬁguration (from *.ioc
+ﬁle). In the default conﬁguration, the internal clock source is used with 8MHz, as shown
+in the ﬁgure bellow.
+Figure 1.2: Default clock source for the system
+Step 3: Conﬁgure the timer on the Parameter Settings, as follows:
+Figure 1.3: Conﬁgure for Timer 2
+Select the clock source for timer 2 to theInternal Clock. Finally, set the prescaller and the
+counter to 7999 and 9, respectively. These values are explained as follows:
+• The target is to set an interrupt timer to 10ms
+Microcontroller Page 9
+
+=== PAGE 10 ===
+• The clock source is 8MHz, by setting the prescaller to 7999, the input clock source
+to the timer is 8MHz/(7999+1) = 1000Hz.
+• The interrupt is raised when the timer counter is counted from 0 to 9, meaning that
+the frequency is divided by 10, which is 100Hz.
+• The frequency of the timer interrupt is 100Hz, meaning that the period is 1/100Hz
+= 10ms.
+Step 4: Enable the timer interrupt by switching to NIVC Settings tab, as follows:
+Figure 1.4: Enable timer interrupt
+Finally, save the conﬁguration ﬁle to generate the source code.
+Step 5: On the main() function, call the timer init function, as follows:
+1 int main ( void )
+2 {
+3 HAL_Init () ;
+4 S y s t e m C l o c k _ C o n f i g () ;
+5
+6 M X _ G P I O _I n i t () ;
+7 M X _ T I M 2 _I n i t () ;
+8
+9 /* USER CODE BEGIN 2 */
+10 H A L _ T I M _ B a s e _ S t a r t _ I T (& htim2 ) ;
+11 /* USER CODE END 2 */
+12
+13 while (1) {
+14
+15 }
+16 }
+Program 1.1: Init the timer interrupt in main
+Please put the init function in a right place to avoid conﬂicts when code generation is ex-
+ecuted (e.g. ioc ﬁle is updated).
+Page 10 HCMUT - Computer Engineering
+
+=== PAGE 11 ===
+Step 6: Add the interrupt service routine function, this function is invoked every 10ms,
+as follows:
+1 /* USER CODE BEGIN 4 */
+2 void H A L _ T I M _ P e r i o d E l a p s e d C a l l b a c k ( T I M _ H a n d l e T y p e D e f * htim )
+{
+3
+4 }
+5 /* USER CODE END 4 */
+Program 1.2: Add an interrupt service routine
+Step 7: To run a LED Blinky demo using interrupt, a short manual is presented as follows:
+1 /* USER CODE BEGIN 4 */
+2 int counter = 100;
+3 void H A L _ T I M _ P e r i o d E l a p s e d C a l l b a c k ( T I M _ H a n d l e T y p e D e f * htim )
+{
+4 counter - -;
+5 if ( counter <= 0) {
+6 counter = 100;
+7 H A L _ G P I O _ T o g g l e P i n ( LED_RED_GPIO_Port , LED _RE D_Pi n ) ;
+8 }
+9 }
+10 /* USER CODE END 4 */
+Program 1.3: LED Blinky using timer interrupt
+The HAL_TIM_PeriodElapsedCallback function is an inﬁnite loop, which is invoked ev-
+ery cycle of the timer 2, in this case, is 10ms.
+Microcontroller Page 11
+
+=== PAGE 12 ===
+3 Exercise and Report
+3.1 Exercise 1
+The ﬁrst exercise show how to interface for multiple seven segment LEDs to STM32F103C6
+micro-controller (MCU). Seven segment displays are common anode type, meaning that
+the anode of all LEDs are tied together as a single terminal and cathodes are left alone as
+individual pins.
+In order to save the resource of the MCU, individual cathode pins from all the seven seg-
+ment LEDs are connected together, and connect to 7 pins of the MCU. These pins are
+popular known as thesignal pins. Meanwhile, the anode pin of each seven segment LEDs
+are controlled under a power enabling circuit, for instance, an PNP transistor. At a given
+time, only one seven segment LED is turned on. However, if the delay is small enough, it
+seems that all LEDs are enabling.
+Implement the circuit simulation in Proteus with two 7-SEGMENT LEDs as following:
+Figure 1.5: Simulation schematic in Proteus
+Components used in the schematic are listed bellow:
+• 7SEG-COM-ANODE (connected from PB0 to PB6)
+• LED-RED
+• PNP
+• RES
+• STM32F103C6
+Students are proposed to use the functiondisplay7SEG(int num) in the Lab 1 in this exer-
+cise. Implement the source code in the interrupt callback function to display number "1"
+on the ﬁrst seven segment and number "2" for second one. The switching time between
+Page 12 HCMUT - Computer Engineering
+
+=== PAGE 13 ===
+2 LEDs is half of second.
+Report 1: Capture your schematic from Proteus and show in the report.
+Report 2: Present your source code in the HAL_TIM_PeriodElapsedCallback function.
+Short question: What is the frequency of the scanning process?
+3.2 Exercise 2
+Extend to 4 seven segment LEDs and two LEDs (connected to PA4, labeled asDOT) in the
+middle as following:
+Figure 1.6: Simulation schematic in Proteus
+Blink the two LEDs every second. Meanwhile, number 3 is displayed on the third seven
+segment and number 0 is displayed on the last one (to present 12 hour and a half). The
+switching time for each seven segment LED is also a half of second (500ms). Implement
+your code in the timer interrupt function.
+Report 1: Capture your schematic from Proteus and show in the report.
+Report 2: Present your source code in the HAL_TIM_PeriodElapsedCallback function.
+Short question: What is the frequency of the scanning process?
+3.3 Exercise 3
+Implement a function named update7SEG(int index). An array of 4 integer numbers are
+declared in this case. The code skeleton in this exercise is presented as following:
+Microcontroller Page 13
+
+=== PAGE 14 ===
+1 const int MAX_LED = 4;
+2 int index_led = 0;
+3 int led_buffer [4] = {1 , 2 , 3 , 4};
+4 void update7SEG ( int index ) {
+5 switch ( index ) {
+6 case 0:
+7 // Display the first 7 SEG with led_buffer [0]
+8 break ;
+9 case 1:
+10 // Display the second 7 SEG with led_buffer [1]
+11 break ;
+12 case 2:
+13 // Display the third 7 SEG with led_buffer [2]
+14 break ;
+15 case 3:
+16 // Display the forth 7 SEG with led_buffer [3]
+17 break ;
+18 default :
+19 break ;
+20 }
+21 }
+Program 1.4: An example for your source code
+This function should be invoked in the timer interrupt, e.g update7SEG(index_led++).
+The variable index_led is updated to stay in a valid range, which is from 0 to 3.
+Report 1: Present the source code of the update7SEG function.
+Report 2: Present the source code in the HAL_TIM_PeriodElapsedCallback.
+Students are proposed to change the values in the led_buffer array for unit test this func-
+tion, which is used afterward.
+3.4 Exercise 4
+Change the period of invoking update7SEG function in order to set the frequency of 4
+seven segment LEDs to 1Hz. The DOT is still blinking every second.
+Report 1: Present the source code in the HAL_TIM_PeriodElapsedCallback.
+3.5 Exercise 5
+Implement a digital clock with hour and minute information displayed by 2 seven seg-
+ment LEDs. The code skeleton in the main function is presented as follows:
+1 int hour = 15 , minute = 8 , second = 50;
+2
+3 while (1) {
+4 second ++;
+Page 14 HCMUT - Computer Engineering
+
+=== PAGE 15 ===
+5 if ( second >= 60) {
+6 second = 0;
+7 minute ++;
+8 }
+9 if ( minute >= 60) {
+10 minute = 0;
+11 hour ++;
+12 }
+13 if ( hour >=24) {
+14 hour = 0;
+15 }
+16 u p d a t e C l o c k B u f f e r () ;
+17 HAL_Delay (1000) ;
+18 }
+Program 1.5: An example for your source code
+The function updateClockBuffer will generate values for the array led_buffer according
+to the values of hour and minute. In the case these values are 1 digit number, digit 0 is
+added.
+Report 1: Present the source code in the updateClockBuffer function.
+3.6 Exercise 6
+The main target from this exercise to reduce the complexity (or reduce code processing)
+in the timer interrupt. The time consumed in the interrupt can lead to the nested inter-
+rupt issue, which can crash the whole system. A simple solution can disable the timer
+whenever the interrupt occurs, the enable it again. However, the real-time processing is
+not guaranteed anymore.
+In this exercise, a software timer is created and its counter is count down every timer inter-
+rupt is raised (every 10ms). By using this timer, theHal_Delay(1000) in the main function
+is removed. In a MCU system, non-blocking delay is better than blocking delay. The de-
+tails to create a software timer are presented bellow. The source code is added to your
+current program, do not delete the source code you have on Exercise 5.
+Step 1: Declare variables and functions for a software timer, as following:
+1 /* USER CODE BEGIN 0 */
+2 int t i m e r 0 _ c o u n t e r = 0;
+3 int ti mer0 _fl ag = 0;
+4 int TI MER_ CYC LE = 10;
+5 void set
+6 Timer0 ( int duration ) {
+7 t i m e r 0 _ c o u n t e r = duration / TIM ER_ CYCL E ;
+8 ti mer0 _fl ag = 0;
+9 }
+10 void timer_run () {
+11 if ( t i m e r 0 _ c o u n t e r > 0) {
+12 timer0_counter - -;
+Microcontroller Page 15
+
+=== PAGE 16 ===
+13 if ( t i m e r 0 _ c o u n t e r == 0) tim er0_ fla g = 1;
+14 }
+15 }
+16 /* USER CODE END 0 */
+Program 1.6: Software timer based timer interrupt
+Please change the TIMER_CYCLE to your timer interrupt period. In the manual code
+above, it is 10ms.
+Step 2: The timer_run() is invoked in the timer interrupt as following:
+1 void H A L _ T I M _ P e r i o d E l a p s e d C a l l b a c k ( T I M _ H a n d l e T y p e D e f * htim )
+{
+2
+3 timer_run () ;
+4
+5 // YOUR OTHER CODE
+6 }
+Program 1.7: Software timer based timer interrupt
+Step 3: Use the timer in the main function by invoked setTimer0 function, then check for
+its ﬂag (timer0_ﬂag). An example to blink an LED connected to PA5 using software timer
+is shown as follows:
+1 setTimer0 (1000) ;
+2 while (1) {
+3 if ( t imer 0_f lag == 1) {
+4 H A L _ G P I O _ T o g g l e P i n ( LED_RED_GPIO_Port , LED _RED _Pi n ) ;
+5 setTimer0 (2000) ;
+6 }
+7 }
+Program 1.8: Software timer is used in main fuction to blink the LED
+Report 1: if in line 1 of the code above is miss, what happens after that and why?
+Report 2: if in line 1 of the code above is changed to setTimer0(1), what happens after
+that and why?
+Report 3: if in line 1 of the code above is changed to setTimer0(10), what is changed com-
+pared to 2 ﬁrst questions and why?
+3.7 Exercise 7
+Upgrade the source code in Exercise 5 (update values for hour, minute and second) by
+using the software timer and remove the HAL_Delay function at the end. Moreover, the
+DOT (connected to PA4) of the digital clock is also moved to main function.
+Report 1: Present your source code in the while loop on main function.
+Page 16 HCMUT - Computer Engineering
+
+=== PAGE 17 ===
+3.8 Exercise 8
+Move also the update7SEG() function from the interrupt timer to the main. Finally, the
+timer interrupt only used to handle software timers. All processing (or complex computa-
+tions) is move to an inﬁnite loop on the main function, optimizing the complexity of the
+interrupt handler function.
+Report 1: Present your source code in the the main function. In the case more extra
+functions are used (e.g. the second software timer), present them in the report as well.
+3.9 Exercise 9
+This is an extra works for this lab. A LED Matrix is added to the system. A reference design
+is shown in ﬁgure bellow:
+Figure 1.7: LED matrix is added to the simulation
+In this schematic, two new components are added, including the MATRIX-8X8-RED and
+ULN2803, which is an NPN transistor array to enable the power supply for a column of
+the LED matrix. Students can change the enable signal (from ENM0 to ENM7) if needed.
+Finally, the data signal (from ROW0 to ROW7) is connected to PB8 to PB15.
+Report 1: Present the schematic of your system by capturing the screen in Proteus.
+Report 2: Implement the function, updateLEDMatrix(int index), which is similarly to 4
+seven led segments.
+1 const int M A X _ L E D _ M A T R I X = 8;
+2 int i n d e x _ l e d _ m a t r i x = 0;
+3 uint8_t m a t r i x _ b u f f e r [8] = {0 x01 , 0 x02 , 0 x03 , 0 x04 , 0 x05 , 0
+x06 , 0 x07 , 0 x08 };
+4 void u p d a t e L E D M a t r i x ( int index ) {
+5 switch ( index ) {
+6 case 0:
+7 break ;
+8 case 1:
+9 break ;
+Microcontroller Page 17
+
+=== PAGE 18 ===
+10 case 2:
+11 break ;
+12 case 3:
+13 break ;
+14 case 4:
+15 break ;
+16 case 5:
+17 break ;
+18 case 6:
+19 break ;
+20 case 7:
+21 break ;
+22 default :
+23 break ;
+24 }
+25 }
+Program 1.9: Function to display data on LED Matrix
+Student are free to choose the invoking frequency of this function. However, this function
+is supposed to invoked in main function. Finally, please update the matrix_buffer to
+display character "A".
+3.10 Exercise 10
+Create an animation on LED matrix, for example, the character is shifted to the left.
+Report 1: Brieﬂy describe your solution and present your source code in the report.
+Page 18 HCMUT - Computer Engineering
+
